@@ -16,6 +16,7 @@ class EventService {
   Future<void> addEvent({
     required String name,
     required Timestamp addedDate,
+    required Timestamp endTime,
     required String description,
     required String imageUrl,
     required GeoPoint geoPoint,
@@ -24,6 +25,7 @@ class EventService {
     await _eventCollection.add({
       "name": name,
       "addedDate": addedDate,
+      "endTime": endTime,
       "description": description,
       "imageUrl": imageUrl,
       'geo-point': geoPoint,

@@ -50,11 +50,16 @@ class _AppDrawerState extends State<AppDrawer> {
         children: [
           UserAccountsDrawerHeader(
             accountName: Text(username),
-            accountEmail: const Text(""),
-            currentAccountPicture: CircleAvatar(
+            accountEmail: Text(_currentUser!.email.toString()),
+            currentAccountPicture: Container(
+              clipBehavior: Clip.hardEdge,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(100),
+              ),
               child: Image.network(
                 photoUrl ??
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSWwfGUCDwrZZK12xVpCOqngxSpn0BDpq6ewQ&s",
+                fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return const Text("Rasm");
                 },

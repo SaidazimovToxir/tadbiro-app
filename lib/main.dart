@@ -4,10 +4,8 @@ import 'package:exam_event_app/blocs/event/event_bloc.dart';
 import 'package:exam_event_app/firebase_options.dart';
 import 'package:exam_event_app/services/firebase/auth_service.dart';
 import 'package:exam_event_app/services/firebase/event_service.dart';
-import 'package:exam_event_app/ui/screens/event_screen/add_event_screen.dart';
 import 'package:exam_event_app/ui/screens/event_screen/my_events_screen.dart';
 import 'package:exam_event_app/ui/screens/home_screen/home_screen.dart';
-import 'package:exam_event_app/ui/screens/auth_screens/login_screen.dart';
 import 'package:exam_event_app/ui/screens/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -46,7 +44,7 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: light,
             darkTheme: dark,
-            home: const MyEventsScreen(),
+            home: const SplashScreen(),
           );
         },
       ),
