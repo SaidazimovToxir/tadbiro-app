@@ -6,6 +6,7 @@ class EventModel {
   final String name;
   final Timestamp addedDate;
   final Timestamp endTime;
+  final int userCount;
   final String description;
   final String imageUrl;
   final GeoPoint geoPoint;
@@ -17,6 +18,7 @@ class EventModel {
     required this.name,
     required this.addedDate,
     required this.endTime,
+    required this.userCount,
     required this.description,
     required this.imageUrl,
     required this.geoPoint,
@@ -29,6 +31,7 @@ class EventModel {
       name: query['name'],
       addedDate: query['addedDate'],
       endTime: query['endTime'],
+      userCount: query['userCount'],
       description: query['description'],
       imageUrl: query['imageUrl'],
       geoPoint: query['geo-point'],

@@ -38,7 +38,6 @@ class _AddEventsScreenState extends State<AddEventScreen> {
         _timeOfEndDay != null &&
         _imageUrl != null &&
         _eventLocation != null) {
-      // final String userID = await UserSharedPrefService().getUserId();
       final userId = FirebaseAuth.instance.currentUser!.uid;
       try {
         _eventService.addEvent(
@@ -51,6 +50,7 @@ class _AddEventsScreenState extends State<AddEventScreen> {
             AppFunctions.combineDateTimeAndTimeOfDay(
                 _dateTime!, _timeOfEndDay!),
           ),
+          userCount: 0,
           geoPoint:
               GeoPoint(_eventLocation!.latitude, _eventLocation!.longitude),
           description: _eDescriptionController.text,
@@ -70,7 +70,8 @@ class _AddEventsScreenState extends State<AddEventScreen> {
         }
       }
     } else {
-      AppFunctions.showSnackBar(context, 'Please fill all fields');
+      AppFunctions.showSnackBar(
+          context, "Barcha malumotlarni to'ldirishing kerak");
     }
   }
 
@@ -84,9 +85,7 @@ class _AddEventsScreenState extends State<AddEventScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        // leading: const ArrowBackButton(),
         title: const Text('Add event'),
       ),
       body: SingleChildScrollView(

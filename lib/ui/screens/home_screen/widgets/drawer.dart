@@ -102,7 +102,7 @@ class _AppDrawerState extends State<AppDrawer> {
             title: const Text("Tungi holat"),
             value: _toggleIsDarkMode,
             onChanged: (value) {
-              AdaptiveTheme.of(context).toggleThemeMode();
+              AdaptiveTheme.of(context).toggleThemeMode(useSystem: false);
               setState(() {
                 _toggleIsDarkMode = !_toggleIsDarkMode;
               });

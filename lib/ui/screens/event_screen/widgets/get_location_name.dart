@@ -111,8 +111,14 @@ class _GetLocationNameState extends State<GetLocationName> {
                                   const Icon(
                                     CupertinoIcons.location_solid,
                                   ),
-                                  Text(
-                                    placemark?.street ?? 'Unknown Street',
+                                  SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width / 2.5,
+                                    child: Text(
+                                      placemark?.street ?? 'Unknown Street',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ],
                               )
