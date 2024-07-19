@@ -41,4 +41,6 @@ class EventService {
       "userCount": nweUserCount,
     });
   }
+
+  
 }

@@ -1,6 +1,7 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:exam_event_app/data/models/event_model.dart';
 import 'package:exam_event_app/services/firebase/event_service.dart';
+import 'package:exam_event_app/services/firebase/event_status_service.dart';
 import 'package:exam_event_app/ui/screens/event_details/event_details_screen.dart';
 import 'package:exam_event_app/ui/screens/event_screen/widgets/get_location_name.dart';
 import 'package:exam_event_app/ui/screens/notification_screen/notification_screen.dart';
@@ -8,6 +9,7 @@ import 'package:exam_event_app/ui/screens/home_screen/widgets/drawer.dart';
 import 'package:exam_event_app/ui/screens/home_screen/widgets/search_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -74,54 +76,157 @@ class _HomeScreenState extends State<HomeScreen> {
             child: CarouselSlider.builder(
               itemCount: imageUrls.length,
               itemBuilder: (context, index, realIndex) {
-                return Container(
-                  margin: const EdgeInsets.all(10.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10.0),
-                    image: DecorationImage(
-                      image: NetworkImage(imageUrls[index]),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Card(
+                return StreamBuilder(
+                  stream: _eventService.getEvents(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    } else if (!snapshot.hasData || snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    } else {
+                      final data = snapshot.data!.docs;
+                      final eventData = data[index];
+                      EventModel event = EventModel.fromJson(eventData);
+                      return StreamBuilder(
+                          stream:
+                              EventStatusService().getEventStatusId(event.id),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
+                            }
+
+                            if (snapshot.data != null &&
+                                snapshot.data!.docs.isNotEmpty) {
+                              final eventDoc = snapshot.data!.docs.first;
+                              event.isRegistered =
+                                  eventDoc['status'] == 'Register';
+                            } else {
+                              event.isRegistered = false;
+                            }
+                            String formattedDate = DateFormat("MMMM")
+                                .format(event.addedDate.toDate());
+                            return Container(
+                              margin: const EdgeInsets.all(10.0),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10.0),
+                                image: DecorationImage(
+                                  image: NetworkImage(event.imageUrl),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
                               child: Padding(
-                                padding: EdgeInsets.all(6.0),
+                                padding: const EdgeInsets.all(8.0),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text("12"),
-                                    Text("May"),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Card(
+                                          child: Padding(
+                                            padding: EdgeInsets.all(6.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  event.addedDate
+                                                      .toDate()
+                                                      .day
+                                                      .toString(),
+                                                ),
+                                                Text(formattedDate),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton.filled(
+                                          onPressed: () {},
+                                          icon: const Icon(
+                                            Icons.favorite,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          event.name,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const Text(
+                                          "Designers",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w300,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ),
-                            ),
-                            IconButton.filled(
-                              onPressed: () {},
-                              icon: const Icon(
-                                Icons.favorite,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Qanaqadur mage festival"),
-                            Text("mage festival"),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                            );
+                          });
+                      /* return ListView.builder(
+                        itemCount: data.length,
+                        itemBuilder: (context, index) {
+                          final eventJson = data[index];
+                          EventModel event = EventModel.fromJson(eventJson);
+                          return StreamBuilder(
+                            stream:
+                                EventStatusService().getEventStatusId(event.id),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Center(
+                                    child: CircularProgressIndicator());
+                              }
+
+                              if (snapshot.data != null &&
+                                  snapshot.data!.docs.isNotEmpty) {
+                                final eventDoc = snapshot.data!.docs.first;
+                                event.isRegistered =
+                                    eventDoc['status'] == 'Register';
+                              } else {
+                                event.isRegistered = false;
+                              }
+
+                              return Hero(
+                                tag: event.id,
+                                child: GetLocationName(
+                                  event: event,
+                                  isOrganizer: false,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => EventDetailsScreen(
+                                          event: event,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ); */
+                    }
+                  },
                 );
               },
               options: CarouselOptions(
@@ -131,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 aspectRatio: 16 / 9,
                 autoPlayCurve: Curves.fastOutSlowIn,
                 enableInfiniteScroll: true,
-                autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                autoPlayAnimationDuration: Duration(milliseconds: 800),
                 viewportFraction: 0.98,
               ),
             ),
@@ -162,24 +267,46 @@ class _HomeScreenState extends State<HomeScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final eventJson = data[index];
-                        final EventModel event = EventModel.fromJson(eventJson);
 
-                        return Hero(
-                          tag: event.id,
-                          child: GetLocationName(
-                            event: event,
-                            isOrganizer: false,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => EventDetailsScreen(
-                                    event: event,
-                                  ),
-                                ),
+                        EventModel event = EventModel.fromJson(eventJson);
+
+                        return StreamBuilder(
+                          stream:
+                              EventStatusService().getEventStatusId(event.id),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
                               );
-                            },
-                          ),
+                            }
+
+                            if (snapshot.data != null &&
+                                snapshot.data!.docs.isNotEmpty) {
+                              final eventDoc = snapshot.data!.docs.first;
+                              event.isRegistered =
+                                  eventDoc['status'] == 'Register';
+                            } else {
+                              event.isRegistered = false;
+                            }
+                            return Hero(
+                              tag: event.id,
+                              child: GetLocationName(
+                                event: event,
+                                isOrganizer: false,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => EventDetailsScreen(
+                                        event: event,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
                         );
                       },
                       childCount: data.length,
@@ -194,3 +321,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
+/*  */

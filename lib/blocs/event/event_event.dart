@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:yandex_mapkit/yandex_mapkit.dart';
 
 abstract class EventEvent {}
 

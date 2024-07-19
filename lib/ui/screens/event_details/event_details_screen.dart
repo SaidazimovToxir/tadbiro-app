@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lottie/lottie.dart';
 
-class EventDetailsScreen extends StatelessWidget {
+class EventDetailsScreen extends StatefulWidget {
   final EventModel event;
   const EventDetailsScreen({
     super.key,
@@ -19,65 +19,81 @@ class EventDetailsScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final _eventStatusService = EventStatusService();
-    final EventService _eventService = EventService();
+  State<EventDetailsScreen> createState() => _EventDetailsScreenState();
+}
 
+class _EventDetailsScreenState extends State<EventDetailsScreen> {
+  final _eventStatusService = EventStatusService();
+  final EventService _eventService = EventService();
+  String eventStateId = '';
+  int minusUserCount = 0;
+
+  bool isEventEndTimePassed(Timestamp endTime) {
+    DateTime eventEndTime = endTime.toDate();
+    DateTime currentTime = DateTime.now();
+
+    return eventEndTime.isBefore(currentTime);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                clipBehavior: Clip.hardEdge,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  clipBehavior: Clip.hardEdge,
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
+                  ),
+                  height: 300,
+                  width: double.infinity,
+                  child: Image.network(
+                    widget.event.imageUrl,
+                    fit: BoxFit.cover,
                   ),
                 ),
-                height: 300,
-                width: double.infinity,
-                child: Image.network(
-                  event.imageUrl,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 35,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton.filled(
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.teal,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 35,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton.filled(
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(Icons.arrow_back),
                       ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.arrow_back),
-                    ),
-                    IconButton.filled(
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.teal,
+                      IconButton.filled(
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                        ),
+                        onPressed: () {},
+                        icon: const Icon(Icons.favorite),
                       ),
-                      onPressed: () {},
-                      icon: const Icon(Icons.favorite),
-                    ),
-                  ],
-                ),
-              )
-            ],
-          ),
-          DetailInfoWidget(
-            event: event,
-            checkUserRegister: false,
-          ),
-        ],
+                    ],
+                  ),
+                )
+              ],
+            ),
+            DetailInfoWidget(
+              event: widget.event,
+              checkUserRegister: false,
+            ),
+          ],
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Padding(
@@ -86,48 +102,89 @@ class EventDetailsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            FloatingActionButton(
-              backgroundColor: Colors.teal,
-              onPressed: () async {
-                final data = await showModalBottomSheet(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return _buildBottomSheet(context);
-                  },
-                );
+            widget.event.isRegistered
+                ? StreamBuilder(
+                    stream:
+                        EventStatusService().getEventStatusId(widget.event.id),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                      if (snapshot.data != null &&
+                          snapshot.data!.docs.isNotEmpty) {
+                        eventStateId = snapshot.data!.docs.first.id;
+                        minusUserCount = snapshot.data!.docs.first['userCount'];
+                      }
+                      // print("Barcha malumotlat $minusUserCount");
+                      return FloatingActionButton(
+                        backgroundColor: Colors.red,
+                        onPressed: () async {
+                          _eventStatusService.editEventStatusName(
+                            id: eventStateId,
+                            newStatus: "Canceled",
+                          );
 
-                int userCount = data['userCount'];
-                final paymentMethod = data['paymentMethod'];
-                final currentUser = FirebaseAuth.instance.currentUser!.uid;
-                try {
-                  _eventStatusService.addEventStatus(
-                    userCount: userCount,
-                    eventId: event.id,
-                    userId: currentUser,
-                    paymentMethod: paymentMethod,
-                    status: "Register",
-                    reminderTime: Timestamp.fromDate(DateTime.now()),
-                  );
+                          _eventService.editEvent(
+                            id: widget.event.id,
+                            nweUserCount:
+                                widget.event.userCount - minusUserCount,
+                          );
 
-                  _eventService.editEvent(
-                    id: event.id,
-                    nweUserCount: event.userCount + userCount,
-                  );
-                  
-                } catch (e) {
-                  if (context.mounted) {
-                    AppFunctions.showErrorSnackBar(context, e.toString());
-                  }
-                }
-              },
-              child: const Text(
-                "Ro'yxatdan o'tish",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
-              ),
-            ),
+                          _eventStatusService.deleteEventStatus(eventStateId);
+                        },
+                        child: const Text(
+                          "Bekor qilish",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                      );
+                    })
+                : FloatingActionButton(
+                    backgroundColor: Colors.teal,
+                    onPressed: () async {
+                      final data = await showModalBottomSheet(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return _buildBottomSheet(context);
+                        },
+                      );
+
+                      int userCount = data['userCount'];
+                      final paymentMethod = data['paymentMethod'];
+                      final currentUser =
+                          FirebaseAuth.instance.currentUser!.uid;
+                      try {
+                        _eventStatusService.addEventStatus(
+                          userCount: userCount,
+                          eventId: widget.event.id,
+                          userId: currentUser,
+                          paymentMethod: paymentMethod,
+                          status: "Register",
+                          reminderTime: Timestamp.fromDate(DateTime.now()),
+                        );
+
+                        _eventService.editEvent(
+                          id: widget.event.id,
+                          nweUserCount: widget.event.userCount + userCount,
+                        );
+                      } catch (e) {
+                        if (context.mounted) {
+                          AppFunctions.showErrorSnackBar(context, e.toString());
+                        }
+                      }
+                    },
+                    child: const Text(
+                      "Ro'yxatdan o'tish",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                  )
           ],
         ),
       ),
@@ -254,8 +311,8 @@ class EventDetailsScreen extends StatelessWidget {
                         Navigator.pop(context, {
                           'userCount': selectedCount,
                           'paymentMethod': selectedPayment,
-                        }); // Close bottom sheet
-                        _showAlertDialog(context); // Show alert dialog
+                        });
+                        _showAlertDialog(context);
                       },
                       child: const Text(
                         "Keyingi",
@@ -277,97 +334,118 @@ class EventDetailsScreen extends StatelessWidget {
 
   void _showAlertDialog(BuildContext context) {
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          contentPadding: const EdgeInsets.all(16.0),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Lottie.asset('assets/images/success.json'),
-              const Text(
-                "Tabriklaymiz!",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                " Siz ${event.name} tadbiriga muaffaqiyatli ro'yxatdan o'tdingiz.",
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+        return StreamBuilder(
+            stream: EventStatusService().getEventStatusId(widget.event.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+              if (snapshot.data != null && snapshot.data!.docs.isNotEmpty) {
+                eventStateId = snapshot.data!.docs.first.id;
+                minusUserCount = snapshot.data!.docs.first['userCount'];
+              }
+              return AlertDialog(
+                contentPadding: const EdgeInsets.all(16.0),
+                content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    FloatingActionButton(
-                      backgroundColor: Colors.teal,
-                      onPressed: () {
-                        _selectDateTime(context);
-                      },
-                      child: const Text(
-                        "Eslatma belgilash",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
+                    Lottie.asset('assets/images/success.json'),
+                    const Text(
+                      "Tabriklaymiz!",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const Gap(10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const HomeScreen(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Colors.teal,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.0),
-                          child: Text(
-                            "Bosh Sahifa",
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
+                    Text(
+                      "Siz ${widget.event.name} tadbiriga muaffaqiyatli ro'yxatdan o'tdingiz.",
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FloatingActionButton(
+                            backgroundColor: Colors.teal,
+                            onPressed: () async {
+                              final date = await _selectDateTime(context);
+                              // print(date?.hour ?? "Malumot yo'q");
+                              _eventStatusService.editEventStatus(
+                                id: eventStateId,
+                                newReminderTime: Timestamp.fromDate(
+                                  date ?? DateTime.now(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              "Eslatma belgilash",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
+                    const Gap(10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const HomeScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.teal,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16.0),
+                                child: Text(
+                                  "Bosh Sahifa",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Gap(20),
                   ],
                 ),
-              ),
-              const Gap(20),
-            ],
-          ),
-        );
+              );
+            });
       },
     );
   }
 
-  Future<void> _selectDateTime(BuildContext context) async {
+  Future<DateTime?> _selectDateTime(BuildContext context) async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -382,7 +460,6 @@ class EventDetailsScreen extends StatelessWidget {
       );
 
       if (pickedTime != null) {
-        final _eventStatusService = EventStatusService();
         Navigator.pop(context);
 
         DateTime selectedDateTime = DateTime(
@@ -392,12 +469,15 @@ class EventDetailsScreen extends StatelessWidget {
           pickedTime.hour,
           pickedTime.minute,
         );
-        print('Selected Date and Time: $selectedDateTime');
+
+        // print('Selected Date and Time: $selectedDateTime');
+        return selectedDateTime;
         // _eventStatusService.editEventStatus(
         //   id: event.id,
         //   newReminderTime: Timestamp.fromDate(selectedDateTime),
         // );
       }
     }
+    return null;
   }
 }

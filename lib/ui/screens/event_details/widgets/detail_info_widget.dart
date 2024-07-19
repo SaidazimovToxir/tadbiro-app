@@ -2,11 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:exam_event_app/data/models/event_model.dart';
 import 'package:exam_event_app/data/models/event_status_model.dart';
 import 'package:exam_event_app/services/firebase/auth_service.dart';
+import 'package:exam_event_app/ui/screens/event_details/widgets/yandex_map_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
+import 'package:yandex_mapkit/yandex_mapkit.dart';
 
 class DetailInfoWidget extends StatefulWidget {
   final EventModel event;
@@ -166,7 +168,18 @@ class _DetailInfoWidgetState extends State<DetailInfoWidget> {
             },
           ),
           const Gap(20.0),
-          Text(widget.event.description)
+          Text(widget.event.description),
+          const Gap(20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: EventLocationMap(
+              eventLocation: Point(
+                latitude: widget.event.geoPoint.latitude,
+                longitude: widget.event.geoPoint.longitude,
+              ),
+            ),
+          ),
+          const Gap(80.0),
         ],
       ),
     );

@@ -10,6 +10,7 @@ class EventModel {
   final String description;
   final String imageUrl;
   final GeoPoint geoPoint;
+  bool isRegistered;
 
   final String userId;
 
@@ -23,6 +24,7 @@ class EventModel {
     required this.imageUrl,
     required this.geoPoint,
     required this.userId,
+    this.isRegistered = false,
   });
 
   factory EventModel.fromJson(QueryDocumentSnapshot query) {

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class EventStatusService {
   final _eventStatusCollection =
@@ -9,12 +10,17 @@ class EventStatusService {
   }
 
   Stream<QuerySnapshot> getEventStatusId(String eventId) {
+    final user = FirebaseAuth.instance.currentUser;
+
     try {
       return _eventStatusCollection
           .where('eventId', isEqualTo: eventId)
+          .where('userId', isEqualTo: user!.uid)
+          .limit(1)
           .snapshots();
     } catch (e) {
       rethrow;
+      // return _eventStatusCollection.where("eventId", isEqualTo: eventId).get();
     }
   }
 
@@ -50,5 +56,9 @@ class EventStatusService {
     await _eventStatusCollection.doc(id).update({
       "status": newStatus,
     });
+  }
+
+  Future<void> deleteEventStatus(String id) async {
+    return _eventStatusCollection.doc(id).delete();
   }
 }
